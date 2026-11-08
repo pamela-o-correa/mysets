@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 128" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b5243"/>
+      <stop offset="100%" stop-color="#24362b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="24" y1="28" x2="104" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f2efe5"/>
+      <stop offset="100%" stop-color="#d8e2d1"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon Badge -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bg)"/>
+  <rect x="14" y="14" width="100" height="100" rx="23" stroke="#b9c7a7" stroke-opacity="0.18" stroke-width="2"/>
+  <rect x="26" y="44" width="9" height="40" rx="4.5" fill="#b9c7a7"/>
+  <rect x="93" y="44" width="9" height="40" rx="4.5" fill="#b9c7a7"/>
+  <path d="M39 37C39 34.5 41 32.5 43.5 32.5H46C48 32.5 49.8 33.8 50.4 35.7L64 63L77.6 35.7C78.2 33.8 80 32.5 82 32.5H84.5C87 32.5 89 34.5 89 37V91C89 93.5 87 95.5 84.5 95.5H80.5C78 95.5 76 93.5 76 91V60L67.2 77C65.8 79.7 62.2 79.7 60.8 77L52 60V91C52 93.5 50 95.5 47.5 95.5H43.5C41 95.5 39 93.5 39 91V37Z" fill="url(#accent)"/>
+  <circle cx="54" cy="107" r="3" fill="#b9c7a7"/>
+  <circle cx="64" cy="107" r="3" fill="#f2efe5"/>
+  <circle cx="74" cy="107" r="3" fill="#b9c7a7"/>
+
+  <!-- Wordmark: mysets -->
+  <text x="144" y="76" font-family="Manrope, DM Sans, sans-serif" font-size="54" font-weight="800" letter-spacing="-2" fill="#26392e">my<tspan font-weight="500" fill="#788d72">sets</tspan></text>
+  <text x="146" y="101" font-family="DM Sans, sans-serif" font-size="13" font-weight="700" letter-spacing="2.5" fill="#788078">SEU TREINO, SEU RITMO</text>
+</svg>

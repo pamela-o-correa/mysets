@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="theme-color" content="#34483b" />
+    <meta
+      name="description"
+      content="mysets — seu treino, explicado passo a passo."
+    />
+    <title>mysets | Seu treino, seu ritmo</title>
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./assets/icon.svg?v=15" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/styles.css?v=15" />
+    <script src="./vendor/chart.umd.js" defer></script>
+    <script src="./vendor/supabase.js" defer></script>
+    <script src="./js/supabase-config.js?v=15" defer></script>
+    <script src="./js/app.js?v=15" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <a
+          class="brand"
+          href="#"
+          data-view="home"
+          aria-label="mysets - Início"
+        >
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 128 128" fill="none">
+              <rect x="16" y="40" width="11" height="48" rx="5.5" fill="currentColor" opacity="0.55" />
+              <rect x="101" y="40" width="11" height="48" rx="5.5" fill="currentColor" opacity="0.55" />
+              <path d="M33 30C33 27.2 35.2 25 38 25H42C44.3 25 46.3 26.5 47 28.6L64 62L81 28.6C81.7 26.5 83.7 25 86 25H90C92.8 25 95 27.2 95 30V98C95 100.8 92.8 103 90 103H84C81.2 103 79 100.8 79 98V58L67.8 79.5C66.2 82.6 61.8 82.6 60.2 79.5L49 58V98C49 100.8 46.8 103 44 103H38C35.2 103 33 100.8 33 98V30Z" fill="currentColor" />
+            </svg>
+          </span
+          ><span>my<span class="brand-light">sets</span></span>
+        </a>
+        <p class="nav-caption">MENU</p>
+        <nav class="side-nav">
+          <button class="nav-link active" data-view="home">
+            <span class="nav-icon">⌂</span>Início
+          </button>
+          <button class="nav-link" data-view="workouts">
+            <span class="nav-icon">▤</span>Minha ficha
+          </button>
+          <button class="nav-link" data-view="exercises">
+            <span class="nav-icon">◈</span>Exercícios
+          </button>
+          <button class="nav-link" data-view="progress">
+            <span class="nav-icon">⌁</span>Progresso
+          </button>
+        </nav>
+        <div class="sidebar-tip">
+          <span class="tip-icon">✦</span>
+          <strong>Um passo de cada vez.</strong>
+          <p>Consistência é mais importante que perfeição.</p>
+        </div>
+        <div class="sidebar-profile">
+          <div class="avatar" id="sidebar-avatar">A</div>
+          <div>
+            <strong id="sidebar-greeting">Olá, Ana</strong
+            ><small>Minha conta</small>
+          </div>
+          <button
+            class="icon-button"
+            aria-label="Abrir perfil"
+            data-view="profile"
+          >
+            •••
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <button
+            type="button"
+            class="mobile-brand"
+            data-view="home"
+            aria-label="mysets - Início"
+          >
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 128 128" fill="none">
+                <rect x="16" y="40" width="11" height="48" rx="5.5" fill="currentColor" opacity="0.55" />
+                <rect x="101" y="40" width="11" height="48" rx="5.5" fill="currentColor" opacity="0.55" />
+                <path d="M33 30C33 27.2 35.2 25 38 25H42C44.3 25 46.3 26.5 47 28.6L64 62L81 28.6C81.7 26.5 83.7 25 86 25H90C92.8 25 95 27.2 95 30V98C95 100.8 92.8 103 90 103H84C81.2 103 79 100.8 79 98V58L67.8 79.5C66.2 82.6 61.8 82.6 60.2 79.5L49 58V98C49 100.8 46.8 103 44 103H38C35.2 103 33 100.8 33 98V30Z" fill="currentColor" />
+              </svg>
+            </span>
+            <span>my<span class="brand-light">sets</span></span>
+          </button>
+          <div class="topbar-right">
+            <span class="today-label" id="today-label"></span
+            ><button
+              class="avatar avatar-small"
+              id="topbar-avatar"
+              aria-label="Perfil"
+              data-view="profile"
+            >
+              A
+            </button>
+          </div>
+        </header>
+
+        <section class="view active" id="view-home">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">SEU ESPAÇO DE TREINO</p>
+              <h1>
+                Vamos evoluir, <span id="home-user-name">Ana</span
+                ><span class="heading-dot">.</span>
+              </h1>
+              <p class="muted">Pequenos passos constroem grandes resultados.</p>
+            </div>
+          </div>
+          <div class="home-grid">
+            <article class="today-card">
+              <div class="today-copy">
+                <span class="pill pill-light" id="today-card-pill">TREINO DE HOJE</span>
+                <h2 id="today-workout-title">
+                  Treino A <span>·</span> Inferiores
+                </h2>
+                <p>Um treino de cada vez. Você consegue!</p>
+                <div class="today-meta" id="today-workout-meta">
+                  <span>◈ 5 exercícios</span><span>◷ 40–50 min</span>
+                </div>
+                <button class="button button-light" id="start-today">
+                  Começar treino <span>→</span>
+                </button>
+              </div>
+              <div class="today-art" aria-hidden="true">
+                <span class="art-circle"></span
+                ><span class="art-dumbbell">✣</span>
+              </div>
+            </article>
+            <article class="week-card card">
+              <div class="card-heading">
+                <div>
+                  <p class="eyebrow">SUA SEMANA</p>
+                  <h3>Ritmo consistente</h3>
+                </div>
+                <span class="subtle-icon">✦</span>
+              </div>
+              <div class="week-number">
+                <strong id="week-count">0</strong
+                ><span id="week-goal-label">/ 4 treinos</span>
+              </div>
+              <div class="progress-track">
+                <span id="week-bar" style="width: 0%"></span>
+              </div>
+              <div class="week-days" id="week-days">
+                <span data-day="1"><i>S</i>Seg</span
+                ><span data-day="2"><i>T</i>Ter</span
+                ><span data-day="3"><i>Q</i>Qua</span
+                ><span data-day="4"><i>Q</i>Qui</span
+                ><span data-day="5"><i>S</i>Sex</span
+                ><span data-day="6"><i>S</i>Sáb</span
+                ><span data-day="0"><i>D</i>Dom</span>
+              </div>
+            </article>
+            <article class="card quick-card">
+              <div class="card-heading">
+                <div>
+                  <p class="eyebrow">CONTINUE DE ONDE PAROU</p>
+                  <h3>Conheça seus exercícios</h3>
+                </div>
+                <span class="quick-icon">↗</span>
+              </div>
+              <p class="muted">
+                Pesquise um movimento e veja como executá-lo com segurança.
+              </p>
+              <button class="text-button" data-view="exercises">
+                Explorar biblioteca <span>→</span>
+              </button>
+            </article>
+            <article class="card recent-card">
+              <div class="card-heading">
+                <div>
+                  <p class="eyebrow">ATIVIDADE</p>
+                  <h3>Últimos treinos</h3>
+                </div>
+                <button class="text-button" data-view="progress">
+                  Ver histórico →
+                </button>
+              </div>
+              <div id="recent-list" class="recent-list">
+                <p class="empty-state">
+                  Seus treinos concluídos aparecerão aqui.
+                </p>
+              </div>
+            </article>
+          </div>
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">ORGANIZE SUA ROTINA</p>
+              <h2>Seus próximos treinos</h2>
+            </div>
+            <button class="text-button" data-view="workouts">
+              Ver minha ficha →
+            </button>
+          </div>
+          <div class="upcoming-grid" id="upcoming-grid">
+            <button class="upcoming-card" data-workout="A">
+              <span class="workout-letter">A</span
+              ><span
+                ><strong>Inferiores</strong
+                ><small>5 exercícios · Segunda</small></span
+              ><span class="arrow">↗</span>
+            </button>
+            <button class="upcoming-card" data-workout="B">
+              <span class="workout-letter sage">B</span
+              ><span
+                ><strong>Superiores</strong
+                ><small>4 exercícios · Terça</small></span
+              ><span class="arrow">↗</span>
+            </button>
+            <button class="upcoming-card" data-workout="C">
+              <span class="workout-letter sand">C</span
+              ><span
+                ><strong>Corpo inteiro</strong
+                ><small>5 exercícios · Quinta</small></span
+              ><span class="arrow">↗</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="view" id="view-workouts">
+          <div class="page-heading heading-row">
+            <div>
+              <p class="eyebrow">SEU PLANEJAMENTO</p>
+              <h1>Minha ficha</h1>
+              <p class="muted">Tudo organizado para você chegar e treinar.</p>
+            </div>
+            <button class="button button-primary" id="new-workout">
+              ＋ Criar ficha
+            </button>
+          </div>
+          <div class="workout-tabs" id="workout-tabs">
+            <button class="tab active" data-workout-tab="A">
+              Treino A <small>Inferiores</small></button
+            ><button class="tab" data-workout-tab="B">
+              Treino B <small>Superiores</small></button
+            ><button class="tab" data-workout-tab="C">
+              Treino C <small>Corpo inteiro</small>
+            </button>
+          </div>
+          <div class="card workout-detail" id="workout-detail"></div>
+        </section>
+
+        <section class="view" id="view-exercises">
+          <div class="page-heading heading-row">
+            <div>
+              <p class="eyebrow">APRENDA CADA MOVIMENTO</p>
+              <h1>Biblioteca de exercícios</h1>
+              <p class="muted">
+                Encontre seu exercício e entenda como executá-lo.
+              </p>
+            </div>
+            <button class="button button-primary" id="new-exercise">
+              ＋ Novo exercício
+            </button>
+          </div>
+          <div class="library-controls">
+            <label class="search-box"
+              ><span>⌕</span
+              ><input
+                id="exercise-search"
+                type="search"
+                placeholder="Buscar exercício..."
+                aria-label="Buscar exercício"
+            /></label>
+            <div class="filter-row" id="exercise-filters">
+              <button class="filter active" data-filter="Todos">Todos</button
+              ><button class="filter" data-filter="Pernas">Pernas</button
+              ><button class="filter" data-filter="Glúteos">Glúteos</button
+              ><button class="filter" data-filter="Costas">Costas</button
+              ><button class="filter" data-filter="Peito">Peito</button
+              ><button class="filter" data-filter="Ombros">Ombros</button
+              ><button class="filter" data-filter="Braços">Braços</button
+              ><button class="filter" data-filter="Abdômen">Abdômen</button
+              ><button class="filter" data-filter="Cardio">Cardio</button>
+            </div>
+          </div>
+          <div class="exercise-grid" id="exercise-grid"></div>
+        </section>
+
+        <section class="view" id="view-progress">
+          <div class="page-heading">
+            <p class="eyebrow">CADA TREINO CONTA</p>
+            <h1>Seu progresso</h1>
+            <p class="muted">Acompanhe sua consistência e evolução.</p>
+          </div>
+          <div class="stats-grid">
+            <article class="card stat-card">
+              <span class="stat-icon">✦</span><small>Treinos concluídos</small
+              ><strong id="stat-workouts">0</strong
+              ><span class="muted">no total</span>
+            </article>
+            <article class="card stat-card">
+              <span class="stat-icon">◷</span><small>Tempo de treino</small
+              ><strong id="stat-time">0h</strong
+              ><span class="muted">registrado</span>
+            </article>
+            <article class="card stat-card">
+              <span class="stat-icon">▤</span><small>Esta semana</small
+              ><strong id="stat-week">0</strong
+              ><span class="muted">sessões realizadas</span>
+            </article>
+          </div>
+          <div class="progress-grid">
+            <article class="card chart-card">
+              <div class="card-heading">
+                <div>
+                  <p class="eyebrow">DESEMPENHO</p>
+                  <h3>Evolução de carga</h3>
+                </div>
+                <select
+                  id="chart-exercise-filter"
+                  class="chart-select"
+                  aria-label="Filtrar evolução por exercício"
+                >
+                  <option value="__ALL__">Geral (maior carga)</option>
+                </select>
+              </div>
+              <span class="chart-note" id="chart-note">Exemplo demonstrativo</span>
+              <canvas id="progress-chart" height="150"></canvas>
+              <p class="chart-footnote" id="chart-footnote">
+                Os registros reais aparecerão aqui conforme você concluir seus
+                treinos.
+              </p>
+            </article>
+            <article class="card history-card">
+              <div class="card-heading">
+                <div>
+                  <p class="eyebrow">SEU CAMINHO</p>
+                  <h3>Histórico recente</h3>
+                </div>
+              </div>
+              <div id="history-list" class="history-list">
+                <p class="empty-state">
+                  Você ainda não concluiu nenhum treino.
+                </p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-profile">
+          <div class="page-heading">
+            <p class="eyebrow">PREFERÊNCIAS</p>
+            <h1>Meu perfil</h1>
+            <p class="muted">Suas informações e preferências.</p>
+          </div>
+          <article class="card profile-card">
+            <div class="profile-avatar" id="profile-avatar">A</div>
+            <div>
+              <h2 id="profile-name">Ana</h2>
+              <p class="muted" id="profile-subtitle">Perfil local personalizado</p>
+            </div>
+            <span class="pill" id="profile-mode-pill">MVP local</span>
+          </article>
+          <article class="card settings-card">
+            <h3>Personalizar perfil</h3>
+            <p class="muted">
+              Ajuste seu nome e sua meta semanal de treinos neste dispositivo.
+            </p>
+            <form id="profile-form" class="form-grid" style="margin-top: 14px">
+              <label class="form-field">
+                <span>Seu nome</span>
+                <input
+                  type="text"
+                  id="input-profile-name"
+                  maxlength="32"
+                  placeholder="Ex.: Ana"
+                  required
+                />
+              </label>
+              <label class="form-field">
+                <span>Meta semanal (treinos)</span>
+                <input
+                  type="number"
+                  id="input-weekly-goal"
+                  min="1"
+                  max="14"
+                  value="4"
+                  required
+                />
+              </label>
+              <div class="form-actions">
+                <button type="submit" class="button button-primary">
+                  Salvar preferências
+                </button>
+              </div>
+            </form>
+          </article>
+          <article class="card settings-card" id="cloud-card">
+            <div class="card-heading">
+              <div>
+                <p class="eyebrow">SINCRONIZAÇÃO ONLINE</p>
+                <h3>Sua conta na nuvem</h3>
+              </div>
+              <span class="pill" id="cloud-status-pill">Modo offline</span>
+            </div>
+            <p class="muted" id="cloud-status-text">
+              Entre ou crie sua conta gratuita para salvar e sincronizar suas
+              fichas, exercícios e histórico em qualquer aparelho.
+            </p>
+            <div id="cloud-auth-area" style="margin-top: 14px" aria-live="polite">
+              <p class="muted">Carregando opções de conta…</p>
+            </div>
+          </article>
+          <article class="card settings-card">
+            <h3>Sobre o mysets</h3>
+            <p class="muted">
+              Seu treino, explicado passo a passo. Esta versão é um protótipo
+              funcional com dados armazenados neste navegador.
+            </p>
+            <div class="detail-actions" style="margin-top: 10px">
+              <button type="button" class="button button-secondary" id="export-backup">
+                ↓ Exportar backup (.json)
+              </button>
+              <button type="button" class="button button-secondary" id="import-backup">
+                ↑ Importar backup
+              </button>
+              <input
+                type="file"
+                id="import-backup-file"
+                accept="application/json,.json"
+                style="display: none"
+              />
+              <button class="text-button" id="reset-demo" style="margin-left: auto">
+                Restaurar dados demonstrativos
+              </button>
+            </div>
+          </article>
+        </section>
+
+        <nav class="bottom-nav" aria-label="Navegação móvel">
+          <button class="active" data-view="home"><span>⌂</span>Início</button
+          ><button data-view="workouts"><span>▤</span>Minha ficha</button
+          ><button data-view="exercises"><span>◈</span>Exercícios</button
+          ><button data-view="progress"><span>⌁</span>Progresso</button>
+        </nav>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="exercise-modal" aria-hidden="true">
+      <section
+        class="modal"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        <button class="modal-close" data-close-modal aria-label="Fechar">
+          ×
+        </button>
+        <div id="exercise-modal-content"></div>
+      </section>
+    </div>
+    <div class="modal-backdrop" id="workout-modal" aria-hidden="true">
+      <section
+        class="modal workout-modal"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="active-title"
+      >
+        <button class="modal-close" id="close-workout" aria-label="Fechar">
+          ×
+        </button>
+        <div id="active-workout-content"></div>
+      </section>
+    </div>
+    <div class="modal-backdrop" id="form-modal" aria-hidden="true">
+      <section
+        class="modal"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="form-modal-title"
+      >
+        <button class="modal-close" id="close-form-modal" aria-label="Fechar">
+          ×
+        </button>
+        <div id="form-modal-content"></div>
+      </section>
+    </div>
+    <div class="active-workout-bar" id="active-workout-bar" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

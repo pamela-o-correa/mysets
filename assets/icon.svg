@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b5243"/>
+      <stop offset="100%" stop-color="#24362b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="24" y1="28" x2="104" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f2efe5"/>
+      <stop offset="100%" stop-color="#d8e2d1"/>
+    </linearGradient>
+  </defs>
+  <!-- App Icon Squircle -->
+  <rect width="128" height="128" rx="30" fill="url(#bg)"/>
+  <rect x="6" y="6" width="116" height="116" rx="25" stroke="#b9c7a7" stroke-opacity="0.16" stroke-width="2"/>
+
+  <!-- Outer Dumbbell Plates (Set 1 & Set 3) -->
+  <rect x="20" y="42" width="10" height="44" rx="5" fill="#b9c7a7"/>
+  <rect x="98" y="42" width="10" height="44" rx="5" fill="#b9c7a7"/>
+
+  <!-- Inner Plates + Stylized "M" of My Sets -->
+  <path d="M35 34C35 31.2386 37.2386 29 40 29H43C45.2091 29 47.147 30.4494 47.7815 32.5649L64 64L80.2185 32.5649C80.853 30.4494 82.7909 29 85 29H88C90.7614 29 93 31.2386 93 34V94C93 96.7614 90.7614 99 88 99H83C80.2386 99 78 96.7614 78 94V58.5L67.8 78.2C66.2 81.3 61.8 81.3 60.2 78.2L50 58.5V94C50 96.7614 47.7614 99 45 99H40C37.2386 99 35 96.7614 35 94V34Z" fill="url(#accent)"/>
+
+  <!-- 3 Set Progress Dots at Bottom -->
+  <circle cx="52" cy="110" r="3.5" fill="#b9c7a7"/>
+  <circle cx="64" cy="110" r="3.5" fill="#f2efe5"/>
+  <circle cx="76" cy="110" r="3.5" fill="#b9c7a7"/>
+</svg>
