@@ -909,6 +909,18 @@ function getSuggestedWorkoutForToday() {
   }
   return null;
 }
+function isCardioExercise(name, group) {
+  if (group === "Cardio") return true;
+  const n = String(name || "").toLocaleLowerCase("pt-BR");
+  return (
+    n.includes("esteira") ||
+    n.includes("bicicleta ergom") ||
+    n.includes("elíptico") ||
+    n.includes("eliptico") ||
+    n.includes("stairmaster") ||
+    n.includes("escada")
+  );
+}
 function isTimeBasedExercise(name, group, reps) {
   const n = String(name || "").toLocaleLowerCase("pt-BR");
   const numReps = Number(reps);
@@ -917,6 +929,11 @@ function isTimeBasedExercise(name, group, reps) {
     numReps >= 20 &&
     (n.includes("prancha") || group === "Cardio")
   );
+}
+function formatExerciseUnit(name, group, reps) {
+  if (isCardioExercise(name, group)) return "min";
+  if (isTimeBasedExercise(name, group, reps)) return "segundos";
+  return "repetições";
 }
 function allExercises() {
   const customMap = new Map(
@@ -1247,7 +1264,7 @@ function renderWorkout() {
   const w = getWorkout(selectedWorkout);
   const detail = document.getElementById("workout-detail");
   const isCustom = Boolean(state.customWorkouts[selectedWorkout]);
-  detail.innerHTML = `<div class="detail-title"><div><h2>Treino ${escapeHtml(selectedWorkout)} — ${escapeHtml(w.name)}</h2><p>${escapeHtml(w.day || "Ficha personalizada")} · ${w.items.length} exercícios</p></div><div class="detail-actions"><button class="button button-secondary" id="edit-selected">Editar ficha</button>${isCustom ? `<button class="button button-secondary" id="delete-selected">${workouts[selectedWorkout] ? "Restaurar padrão" : "Excluir"}</button>` : ""}<button class="button button-primary" id="start-selected">Iniciar treino →</button></div></div>${w.items.map((it, i) => `<div class="exercise-row"><span class="exercise-number">${String(i + 1).padStart(2, "0")}</span><div><strong>${escapeHtml(it[0])}</strong><small>${escapeHtml(it[1])} · ${it[2]} séries × ${it[3]} ${isTimeBasedExercise(it[0], it[1], it[3]) ? "segundos" : "repetições"}</small></div><button class="row-action" data-open-exercise="${escapeAttr(it[0])}">Ver exercício ↗</button><span class="muted">${it[4]}s descanso</span></div>`).join("")}`;
+  detail.innerHTML = `<div class="detail-title"><div><h2>Treino ${escapeHtml(selectedWorkout)} — ${escapeHtml(w.name)}</h2><p>${escapeHtml(w.day || "Ficha personalizada")} · ${w.items.length} exercícios</p></div><div class="detail-actions"><button class="button button-secondary" id="edit-selected">Editar ficha</button>${isCustom ? `<button class="button button-secondary" id="delete-selected">${workouts[selectedWorkout] ? "Restaurar padrão" : "Excluir"}</button>` : ""}<button class="button button-primary" id="start-selected">Iniciar treino →</button></div></div>${w.items.map((it, i) => `<div class="exercise-row"><span class="exercise-number">${String(i + 1).padStart(2, "0")}</span><div><strong>${escapeHtml(it[0])}</strong><small>${escapeHtml(it[1])} · ${it[2]} ${Number(it[2]) === 1 ? "série" : "séries"} × ${it[3]} ${formatExerciseUnit(it[0], it[1], it[3])}</small></div><button class="row-action" data-open-exercise="${escapeAttr(it[0])}">Ver exercício ↗</button><span class="muted">${it[4]}s descanso</span></div>`).join("")}`;
   detail
     .querySelector("#start-selected")
     .addEventListener("click", () => startWorkout(selectedWorkout));
@@ -1409,6 +1426,7 @@ function openWorkoutForm(editKey = null) {
             .join("")}</optgroup>`,
       )
       .join("");
+    const initialIsCardio = isCardioExercise(item[0], item[1]);
     row.innerHTML = `
       <div class="builder-item-top">
         <select class="wf-ex-select" aria-label="Selecionar exercício">${optionsHtml}</select>
@@ -1419,11 +1437,27 @@ function openWorkoutForm(editKey = null) {
         </div>
       </div>
       <div class="builder-item-metrics">
-        <label>Séries<input type="number" class="wf-ex-sets" min="1" max="10" value="${Number(item[2]) || 3}" required /></label>
-        <label>Repetições / seg<input type="number" class="wf-ex-reps" min="1" max="300" value="${Number(item[3]) || 12}" required /></label>
+        <label>Séries<input type="number" class="wf-ex-sets" min="1" max="10" value="${Number(item[2]) || (initialIsCardio ? 1 : 3)}" required /></label>
+        <label><span class="wf-reps-label">${initialIsCardio ? "Tempo (min)" : "Repetições / seg"}</span><input type="number" class="wf-ex-reps" min="1" max="300" value="${Number(item[3]) || (initialIsCardio ? 20 : 12)}" required /></label>
         <label>Descanso (s)<input type="number" class="wf-ex-rest" min="10" max="300" step="5" value="${Number(item[4]) || 60}" required /></label>
       </div>
     `;
+    const exSelect = row.querySelector(".wf-ex-select");
+    const repsLabelEl = row.querySelector(".wf-reps-label");
+    const setsInputEl = row.querySelector(".wf-ex-sets");
+    const repsInputEl = row.querySelector(".wf-ex-reps");
+    exSelect.addEventListener("change", () => {
+      const opt = exSelect.selectedOptions?.[0];
+      const grp = opt?.dataset?.group || "";
+      const cardio = isCardioExercise(exSelect.value, grp);
+      if (repsLabelEl) {
+        repsLabelEl.textContent = cardio ? "Tempo (min)" : "Repetições / seg";
+      }
+      if (cardio && setsInputEl.value === "3" && repsInputEl.value === "12") {
+        setsInputEl.value = "1";
+        repsInputEl.value = "20";
+      }
+    });
     row.querySelector('[data-move="up"]').addEventListener("click", () => {
       if (row.previousElementSibling) {
         itemsContainer.insertBefore(row, row.previousElementSibling);
@@ -1990,9 +2024,22 @@ function renderActiveWorkout() {
       String(ex.name).toLocaleLowerCase("pt-BR"),
   );
   const symbol = exInfo?.symbol || "✣";
-  const isSeconds = isTimeBasedExercise(ex.name, ex.group, ex.reps);
+  const isCardio = isCardioExercise(ex.name, ex.group);
+  const isSeconds = !isCardio && isTimeBasedExercise(ex.name, ex.group, ex.reps);
+  const unitText = isCardio ? "min" : isSeconds ? "segundos" : "repetições";
+  const col2Title = isCardio ? "Meta" : isSeconds ? "Tempo" : "Repetições";
+  const col2Suffix = isCardio ? " min" : isSeconds ? "s" : "";
+  const col3Title = isCardio ? "Tempo feito (min)" : "Carga (kg)";
+  const lastHintText = ex.lastMaxWeight
+    ? isCardio
+      ? `Último tempo registrado: ${ex.lastMaxWeight} min`
+      : `Última carga registrada: ${ex.lastMaxWeight} kg`
+    : "";
+  const notePlaceholder = isCardio
+    ? "Ex.: Velocidade 6.5 km/h, inclinação 3%, nível 8..."
+    : "Ex.: Banco no furo 3, pegada neutra...";
   document.getElementById("active-workout-content").innerHTML =
-    `<div class="active-top"><span class="pill">TREINO ${escapeHtml(s.key)}</span><div class="active-top-right"><span class="active-count">Exercício ${s.index + 1} de ${total}</span><button type="button" class="minimize-btn" id="minimize-workout" title="Minimizar para consultar o app">— Minimizar</button></div></div><p class="eyebrow">EM TREINAMENTO</p><h2 id="active-title">${escapeHtml(ex.name)}</h2><p class="muted">${ex.total} séries · ${ex.reps} ${isSeconds ? "segundos" : "repetições"} por série</p>${ex.lastMaxWeight ? `<span class="last-weight-hint">Última carga registrada: ${ex.lastMaxWeight} kg</span>` : ""}<div class="active-exercise-art">${escapeHtml(symbol)}</div><button class="text-button" id="active-video">▶ Ver instruções do exercício</button><table class="set-table"><thead><tr><th>Série</th><th>${isSeconds ? "Tempo" : "Repetições"}</th><th>Carga (kg)</th><th>Feita</th></tr></thead><tbody>${ex.records.map((r, i) => `<tr><td>${i + 1}</td><td>${ex.reps}${isSeconds ? "s" : ""}</td><td><input type="number" min="0" step="0.5" placeholder="—" value="${escapeAttr(r.weight)}" data-weight="${i}" aria-label="Carga da série ${i + 1}"></td><td><input type="checkbox" class="set-check" data-set="${i}" ${r.done ? "checked" : ""} aria-label="Concluir série ${i + 1}"></td></tr>`).join("")}</tbody></table><label class="exercise-note-field"><span>📝 Observações / ajuste do aparelho</span><input type="text" id="active-exercise-note" placeholder="Ex.: Banco no furo 3, pegada neutra..." value="${escapeAttr(ex.note || "")}" maxlength="120" /></label><div class="rest-panel"><div><small class="muted">DESCANSO</small><strong id="rest-clock">${formatTime(restRemaining || ex.rest)}</strong></div><button id="start-rest">Iniciar descanso</button></div><div class="active-footer">${s.index > 0 ? `<button class="button button-secondary" id="prev-exercise">← Exercício anterior</button>` : ""}<button class="button button-primary" id="next-exercise">${s.index === total - 1 ? "Finalizar treino" : "Próximo exercício →"}</button></div>`;
+    `<div class="active-top"><span class="pill">TREINO ${escapeHtml(s.key)}</span><div class="active-top-right"><span class="active-count">Exercício ${s.index + 1} de ${total}</span><button type="button" class="minimize-btn" id="minimize-workout" title="Minimizar para consultar o app">— Minimizar</button></div></div><p class="eyebrow">EM TREINAMENTO</p><h2 id="active-title">${escapeHtml(ex.name)}</h2><p class="muted">${ex.total} ${Number(ex.total) === 1 ? "série" : "séries"} · ${ex.reps} ${unitText} por série</p>${lastHintText ? `<span class="last-weight-hint">${escapeHtml(lastHintText)}</span>` : ""}<div class="active-exercise-art">${escapeHtml(symbol)}</div><button class="text-button" id="active-video">▶ Ver instruções do exercício</button><table class="set-table"><thead><tr><th>Série</th><th>${col2Title}</th><th>${col3Title}</th><th>Feita</th></tr></thead><tbody>${ex.records.map((r, i) => `<tr><td>${i + 1}</td><td>${ex.reps}${col2Suffix}</td><td><input type="number" min="0" step="${isCardio ? "1" : "0.5"}" placeholder="${isCardio ? escapeAttr(String(ex.reps)) : "—"}" value="${escapeAttr(r.weight)}" data-weight="${i}" aria-label="${col3Title} da série ${i + 1}"></td><td><input type="checkbox" class="set-check" data-set="${i}" ${r.done ? "checked" : ""} aria-label="Concluir série ${i + 1}"></td></tr>`).join("")}</tbody></table><label class="exercise-note-field"><span>📝 Observações / ajuste do aparelho</span><input type="text" id="active-exercise-note" placeholder="${notePlaceholder}" value="${escapeAttr(ex.note || "")}" maxlength="120" /></label><div class="rest-panel"><div><small class="muted">DESCANSO</small><strong id="rest-clock">${formatTime(restRemaining || ex.rest)}</strong></div><button id="start-rest">Iniciar descanso</button></div><div class="active-footer">${s.index > 0 ? `<button class="button button-secondary" id="prev-exercise">← Exercício anterior</button>` : ""}<button class="button button-primary" id="next-exercise">${s.index === total - 1 ? "Finalizar treino" : "Próximo exercício →"}</button></div>`;
   document
     .getElementById("minimize-workout")
     ?.addEventListener("click", minimizeWorkoutModal);
@@ -2015,7 +2062,13 @@ function renderActiveWorkout() {
   );
   document.querySelectorAll("[data-set]").forEach((input) =>
     input.addEventListener("change", () => {
-      ex.records[Number(input.dataset.set)].done = input.checked;
+      const idx = Number(input.dataset.set);
+      ex.records[idx].done = input.checked;
+      if (input.checked && isCardio && ex.records[idx].weight === "") {
+        ex.records[idx].weight = String(ex.reps);
+        const wInput = document.querySelector(`[data-weight="${idx}"]`);
+        if (wInput) wInput.value = String(ex.reps);
+      }
       saveActiveSession();
       if (input.checked) {
         startRest(ex.rest);
@@ -2177,6 +2230,7 @@ function finishWorkout() {
     })),
   }));
   const weights = details
+    .filter((d) => !isCardioExercise(d.name, d.group))
     .flatMap((d) => d.records)
     .filter((r) => r.weight !== null && !Number.isNaN(r.weight) && r.weight > 0)
     .map((r) => r.weight);
@@ -2232,7 +2286,7 @@ function renderHome() {
     goalLabel.title = "Clique para alterar sua meta semanal no perfil";
     goalLabel.style.cursor = "pointer";
     goalLabel.onclick = () => {
-      switchView("profile");
+      navigate("profile");
       setTimeout(() => document.getElementById("input-weekly-goal")?.focus(), 60);
     };
   }
@@ -2316,14 +2370,21 @@ function openSessionDetail(idx) {
       ? s.details
           .map((d) => {
             const doneCount = (d.records || []).filter((r) => r.done).length;
+            const cardio = isCardioExercise(d.name, d.group);
             const repsLabel = d.reps
-              ? ` · ${d.reps} ${isTimeBasedExercise(d.name, d.group, d.reps) ? "seg" : "reps"}`
+              ? ` · ${d.reps} ${cardio ? "min" : isTimeBasedExercise(d.name, d.group, d.reps) ? "seg" : "reps"}`
               : "";
+            const unitSuffix = cardio ? " min" : "kg";
             const weightsStr = (d.records || [])
               .filter((r) => r.weight !== null && r.weight !== "")
-              .map((r) => `${r.weight}kg`)
+              .map((r) => `${r.weight}${unitSuffix}`)
               .join(", ");
-            return `<div class="exercise-row" style="grid-template-columns:1fr auto"><div><strong>${escapeHtml(d.name)}</strong><small>${escapeHtml(d.group || "Geral")} · ${doneCount}/${(d.records || []).length} séries concluídas${repsLabel}</small>${d.note ? `<small style="display:block;color:var(--sage);margin-top:2px">📝 ${escapeHtml(d.note)}</small>` : ""}</div><span class="muted">${weightsStr ? escapeHtml(weightsStr) : "Sem carga"}</span></div>`;
+            const fallbackRight = cardio
+              ? doneCount > 0 && d.reps
+                ? `${d.reps} min`
+                : "Sem tempo"
+              : "Sem carga";
+            return `<div class="exercise-row" style="grid-template-columns:1fr auto"><div><strong>${escapeHtml(d.name)}</strong><small>${escapeHtml(d.group || "Geral")} · ${doneCount}/${(d.records || []).length} séries concluídas${repsLabel}</small>${d.note ? `<small style="display:block;color:var(--sage);margin-top:2px">📝 ${escapeHtml(d.note)}</small>` : ""}</div><span class="muted">${weightsStr ? escapeHtml(weightsStr) : fallbackRight}</span></div>`;
           })
           .join("")
       : `<p class="empty-state">Sem detalhamento de séries para esta sessão.</p>`;
@@ -2496,16 +2557,28 @@ function renderProgress() {
         return wts.length ? Math.max(...wts) : 0;
       })
     : [0, 0, 0, 0];
+  const isFilteredCardio =
+    selectedExFilter !== "__ALL__" &&
+    isCardioExercise(
+      selectedExFilter,
+      allExercises().find(
+        (x) => x.name.toLocaleLowerCase("pt-BR") === filterLower,
+      )?.group,
+    );
   const noteEl = document.getElementById("chart-note");
   const footnoteEl = document.getElementById("chart-footnote");
   if (noteEl) {
     noteEl.textContent = hasRealData
-      ? "Maior carga por sessão (kg)"
+      ? isFilteredCardio
+        ? "Tempo por sessão (min)"
+        : "Maior carga por sessão (kg)"
       : "Exemplo demonstrativo";
   }
   if (footnoteEl) {
     footnoteEl.textContent = hasRealData
-      ? "Evolução da carga máxima registrada nas suas últimas sessões concluídas."
+      ? isFilteredCardio
+        ? "Evolução do tempo registrado nas suas últimas sessões deste exercício."
+        : "Evolução da carga máxima registrada nas suas últimas sessões concluídas."
       : "Os registros reais aparecerão aqui conforme você concluir seus treinos.";
   }
   chart = new Chart(canvas, {
@@ -2514,7 +2587,9 @@ function renderProgress() {
       labels,
       datasets: [
         {
-          label: "Carga registrada (kg)",
+          label: isFilteredCardio
+            ? "Tempo registrado (min)"
+            : "Carga registrada (kg)",
           data: dataPoints,
           borderColor: "#788d72",
           backgroundColor: "rgba(120,141,114,.12)",

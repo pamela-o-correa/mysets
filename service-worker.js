@@ -1,4 +1,4 @@
-const CACHE_NAME = "mysets-v5";
+const CACHE_NAME = "mysets-v6";
 const CORE = [
   "./",
   "./index.html",
