@@ -849,8 +849,10 @@ function minimizeWorkoutModal() {
   document.getElementById("workout-modal").classList.remove("open");
   document.getElementById("workout-modal").setAttribute("aria-hidden", "true");
   renderActiveWorkoutBar();
+  renderWorkout();
+  renderHome();
   restoreFocus("workout-modal");
-  showToast("Treino minimizado. Toque na barra inferior para retomar.");
+  showToast("Treino salvo em andamento. Toque na barra inferior ou escolha outro exercício.");
 }
 function resumeWorkoutModal() {
   if (!activeSession) return;
@@ -1178,13 +1180,11 @@ document
   .querySelectorAll("[data-close-modal]")
   .forEach((b) => b.addEventListener("click", closeExerciseModal));
 document.getElementById("close-workout").addEventListener("click", () => {
-  if (
-    !activeSession ||
-    confirm(
-      "Deseja encerrar e descartar o treino em andamento? As séries desta sessão não serão salvas.",
-    )
-  )
+  if (activeSession) {
+    minimizeWorkoutModal();
+  } else {
     closeWorkoutModal();
+  }
 });
 document.getElementById("exercise-modal").addEventListener("click", (e) => {
   if (e.target.id === "exercise-modal") closeExerciseModal();
@@ -1264,10 +1264,36 @@ function renderWorkout() {
   const w = getWorkout(selectedWorkout);
   const detail = document.getElementById("workout-detail");
   const isCustom = Boolean(state.customWorkouts[selectedWorkout]);
-  detail.innerHTML = `<div class="detail-title"><div><h2>Treino ${escapeHtml(selectedWorkout)} — ${escapeHtml(w.name)}</h2><p>${escapeHtml(w.day || "Ficha personalizada")} · ${w.items.length} exercícios</p></div><div class="detail-actions"><button class="button button-secondary" id="edit-selected">Editar ficha</button>${isCustom ? `<button class="button button-secondary" id="delete-selected">${workouts[selectedWorkout] ? "Restaurar padrão" : "Excluir"}</button>` : ""}<button class="button button-primary" id="start-selected">Iniciar treino →</button></div></div>${w.items.map((it, i) => `<div class="exercise-row"><span class="exercise-number">${String(i + 1).padStart(2, "0")}</span><div><strong>${escapeHtml(it[0])}</strong><small>${escapeHtml(it[1])} · ${it[2]} ${Number(it[2]) === 1 ? "série" : "séries"} × ${it[3]} ${formatExerciseUnit(it[0], it[1], it[3])}</small></div><button class="row-action" data-open-exercise="${escapeAttr(it[0])}">Ver exercício ↗</button><span class="muted">${it[4]}s descanso</span></div>`).join("")}`;
+  const isActiveThis = Boolean(
+    activeSession && activeSession.key === selectedWorkout,
+  );
+  detail.innerHTML = `<div class="detail-title"><div><h2>Treino ${escapeHtml(selectedWorkout)} — ${escapeHtml(w.name)}</h2><p>${escapeHtml(w.day || "Ficha personalizada")} · ${w.items.length} exercícios</p></div><div class="detail-actions"><button class="button button-secondary" id="edit-selected">Editar ficha</button>${isCustom ? `<button class="button button-secondary" id="delete-selected">${workouts[selectedWorkout] ? "Restaurar padrão" : "Excluir"}</button>` : ""}<button class="button button-primary" id="start-selected">${isActiveThis ? "Retomar treino →" : "Iniciar treino →"}</button></div></div>${w.items
+    .map((it, i) => {
+      const activeSet = isActiveThis ? activeSession.sets?.[i] : null;
+      const doneCount = activeSet
+        ? activeSet.records.filter((r) => r.done).length
+        : 0;
+      const totalSets = activeSet ? activeSet.records.length : Number(it[2]) || 3;
+      const statusBadge =
+        isActiveThis && doneCount > 0
+          ? `<span class="row-status-pill">${doneCount >= totalSets ? "✓ Concluído" : `${doneCount}/${totalSets} feitas`}</span>`
+          : "";
+      const jumpBtn = isActiveThis
+        ? `<button class="row-action" data-jump-exercise="${i}" style="font-weight:700;color:var(--forest)">${doneCount >= totalSets ? "Rever ↻" : "Treinar este →"}</button>`
+        : "";
+      return `<div class="exercise-row"><span class="exercise-number">${String(i + 1).padStart(2, "0")}</span><div><strong>${escapeHtml(it[0])}${statusBadge}</strong><small>${escapeHtml(it[1])} · ${it[2]} ${Number(it[2]) === 1 ? "série" : "séries"} × ${it[3]} ${formatExerciseUnit(it[0], it[1], it[3])}</small></div><div style="display:flex;gap:10px;align-items:center">${jumpBtn}<button class="row-action" data-open-exercise="${escapeAttr(it[0])}">Ver exercício ↗</button></div><span class="muted">${it[4]}s descanso</span></div>`;
+    })
+    .join("")}`;
   detail
     .querySelector("#start-selected")
     .addEventListener("click", () => startWorkout(selectedWorkout));
+  detail
+    .querySelectorAll("[data-jump-exercise]")
+    .forEach((b) =>
+      b.addEventListener("click", () =>
+        startWorkout(selectedWorkout, Number(b.dataset.jumpExercise)),
+      ),
+    );
   detail
     .querySelector("#edit-selected")
     .addEventListener("click", () => openWorkoutForm(selectedWorkout));
@@ -1961,9 +1987,26 @@ function getLastExerciseRecord(exerciseName) {
     note: latestNote,
   };
 }
-function startWorkout(key) {
+function startWorkout(key, targetIndex = null) {
   if (activeSession) {
     if (activeSession.key === key) {
+      if (
+        typeof targetIndex === "number" &&
+        targetIndex >= 0 &&
+        targetIndex < activeSession.sets.length
+      ) {
+        activeSession.index = targetIndex;
+      } else {
+        const cur = activeSession.sets[activeSession.index];
+        const curAllDone =
+          cur && Array.isArray(cur.records) && cur.records.every((r) => r.done);
+        if (curAllDone) {
+          const nextPending = activeSession.sets.findIndex((sItem) =>
+            sItem.records.some((r) => !r.done),
+          );
+          if (nextPending !== -1) activeSession.index = nextPending;
+        }
+      }
       resumeWorkoutModal();
       return;
     }
@@ -1981,7 +2024,12 @@ function startWorkout(key) {
     key,
     name: w.name,
     started: Date.now(),
-    index: 0,
+    index:
+      typeof targetIndex === "number" &&
+      targetIndex >= 0 &&
+      targetIndex < w.items.length
+        ? targetIndex
+        : 0,
     minimized: false,
     sets: w.items.map((it) => {
       const last = getLastExerciseRecord(it[0]);
@@ -2038,11 +2086,60 @@ function renderActiveWorkout() {
   const notePlaceholder = isCardio
     ? "Ex.: Velocidade 6.5 km/h, inclinação 3%, nível 8..."
     : "Ex.: Banco no furo 3, pegada neutra...";
+  const stripHtml = `<div class="active-ex-strip" role="tablist" aria-label="Alternar exercício da ficha">${s.sets
+    .map((item, idx) => {
+      const doneCnt = item.records.filter((r) => r.done).length;
+      const allDone = doneCnt >= item.records.length && item.records.length > 0;
+      const prefix = allDone
+        ? "✓ "
+        : doneCnt > 0
+          ? `${doneCnt}/${item.records.length} · `
+          : `${idx + 1}. `;
+      return `<button type="button" class="active-ex-chip ${idx === s.index ? "current" : ""} ${allDone ? "done" : ""}" data-switch-ex="${idx}" title="Ir para ${escapeAttr(item.name)}">${prefix}${escapeHtml(item.name)}</button>`;
+    })
+    .join("")}</div>`;
+  const otherPendingIdx = s.sets.findIndex(
+    (item, idx) => idx !== s.index && item.records.some((r) => !r.done),
+  );
+  const isLastOrAllOtherDone = s.index === total - 1 || otherPendingIdx === -1;
   document.getElementById("active-workout-content").innerHTML =
-    `<div class="active-top"><span class="pill">TREINO ${escapeHtml(s.key)}</span><div class="active-top-right"><span class="active-count">Exercício ${s.index + 1} de ${total}</span><button type="button" class="minimize-btn" id="minimize-workout" title="Minimizar para consultar o app">— Minimizar</button></div></div><p class="eyebrow">EM TREINAMENTO</p><h2 id="active-title">${escapeHtml(ex.name)}</h2><p class="muted">${ex.total} ${Number(ex.total) === 1 ? "série" : "séries"} · ${ex.reps} ${unitText} por série</p>${lastHintText ? `<span class="last-weight-hint">${escapeHtml(lastHintText)}</span>` : ""}<div class="active-exercise-art">${escapeHtml(symbol)}</div><button class="text-button" id="active-video">▶ Ver instruções do exercício</button><table class="set-table"><thead><tr><th>Série</th><th>${col2Title}</th><th>${col3Title}</th><th>Feita</th></tr></thead><tbody>${ex.records.map((r, i) => `<tr><td>${i + 1}</td><td>${ex.reps}${col2Suffix}</td><td><input type="number" min="0" step="${isCardio ? "1" : "0.5"}" placeholder="${isCardio ? escapeAttr(String(ex.reps)) : "—"}" value="${escapeAttr(r.weight)}" data-weight="${i}" aria-label="${col3Title} da série ${i + 1}"></td><td><input type="checkbox" class="set-check" data-set="${i}" ${r.done ? "checked" : ""} aria-label="Concluir série ${i + 1}"></td></tr>`).join("")}</tbody></table><label class="exercise-note-field"><span>📝 Observações / ajuste do aparelho</span><input type="text" id="active-exercise-note" placeholder="${notePlaceholder}" value="${escapeAttr(ex.note || "")}" maxlength="120" /></label><div class="rest-panel"><div><small class="muted">DESCANSO</small><strong id="rest-clock">${formatTime(restRemaining || ex.rest)}</strong></div><button id="start-rest">Iniciar descanso</button></div><div class="active-footer">${s.index > 0 ? `<button class="button button-secondary" id="prev-exercise">← Exercício anterior</button>` : ""}<button class="button button-primary" id="next-exercise">${s.index === total - 1 ? "Finalizar treino" : "Próximo exercício →"}</button></div>`;
+    `<div class="active-top"><span class="pill">TREINO ${escapeHtml(s.key)}</span><div class="active-top-right"><span class="active-count">Exercício ${s.index + 1} de ${total}</span><button type="button" class="minimize-btn" id="minimize-workout" title="Minimizar para consultar o app">— Minimizar</button></div></div>${stripHtml}<p class="eyebrow">EM TREINAMENTO</p><h2 id="active-title">${escapeHtml(ex.name)}</h2><p class="muted">${ex.total} ${Number(ex.total) === 1 ? "série" : "séries"} · ${ex.reps} ${unitText} por série</p>${lastHintText ? `<span class="last-weight-hint">${escapeHtml(lastHintText)}</span>` : ""}<div class="active-exercise-art">${escapeHtml(symbol)}</div><button class="text-button" id="active-video">▶ Ver instruções do exercício</button><table class="set-table"><thead><tr><th>Série</th><th>${col2Title}</th><th>${col3Title}</th><th>Feita</th></tr></thead><tbody>${ex.records.map((r, i) => `<tr><td>${i + 1}</td><td>${ex.reps}${col2Suffix}</td><td><input type="number" min="0" step="${isCardio ? "1" : "0.5"}" placeholder="${isCardio ? escapeAttr(String(ex.reps)) : "—"}" value="${escapeAttr(r.weight)}" data-weight="${i}" aria-label="${col3Title} da série ${i + 1}"></td><td><input type="checkbox" class="set-check" data-set="${i}" ${r.done ? "checked" : ""} aria-label="Concluir série ${i + 1}"></td></tr>`).join("")}</tbody></table><label class="exercise-note-field"><span>📝 Observações / ajuste do aparelho</span><input type="text" id="active-exercise-note" placeholder="${notePlaceholder}" value="${escapeAttr(ex.note || "")}" maxlength="120" /></label><div class="rest-panel"><div><small class="muted">DESCANSO</small><strong id="rest-clock">${formatTime(restRemaining || ex.rest)}</strong></div><button id="start-rest">Iniciar descanso</button></div><div class="active-footer">${s.index > 0 ? `<button class="button button-secondary" id="prev-exercise">← Anterior</button>` : ""}${s.index === total - 1 && otherPendingIdx !== -1 ? `<button class="button button-secondary" id="jump-pending-exercise">Ir p/ pendente (${otherPendingIdx + 1})</button>` : ""}<button class="button button-primary" id="next-exercise">${isLastOrAllOtherDone ? "Finalizar treino" : "Próximo exercício →"}</button></div><div class="discard-workout-row"><button type="button" class="discard-workout-btn" id="discard-workout">Descartar treino em andamento</button></div>`;
   document
     .getElementById("minimize-workout")
     ?.addEventListener("click", minimizeWorkoutModal);
+  document.querySelectorAll("[data-switch-ex]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const targetIdx = Number(btn.dataset.switchEx);
+      if (targetIdx !== s.index) {
+        s.index = targetIdx;
+        stopRest();
+        restRemaining = 0;
+        saveActiveSession();
+        renderActiveWorkout();
+      }
+    }),
+  );
+  document
+    .getElementById("jump-pending-exercise")
+    ?.addEventListener("click", () => {
+      if (otherPendingIdx !== -1) {
+        s.index = otherPendingIdx;
+        stopRest();
+        restRemaining = 0;
+        saveActiveSession();
+        renderActiveWorkout();
+      }
+    });
+  document.getElementById("discard-workout")?.addEventListener("click", () => {
+    if (
+      confirm(
+        "Deseja descartar o treino em andamento? As séries marcadas nesta sessão não serão salvas.",
+      )
+    ) {
+      closeWorkoutModal();
+      renderWorkout();
+    }
+  });
   document
     .getElementById("active-exercise-note")
     ?.addEventListener("input", (e) => {
@@ -2092,7 +2189,7 @@ function renderActiveWorkout() {
     });
   }
   document.getElementById("next-exercise").addEventListener("click", () => {
-    if (s.index === total - 1) {
+    if (isLastOrAllOtherDone) {
       const anyDone = s.sets.some((x) => x.records.some((r) => r.done));
       if (
         !anyDone &&
@@ -2103,8 +2200,17 @@ function renderActiveWorkout() {
         return;
       }
       finishWorkout();
+      renderWorkout();
     } else {
-      s.index++;
+      const nextUnfinishedAfter = s.sets.findIndex(
+        (item, idx) => idx > s.index && item.records.some((r) => !r.done),
+      );
+      s.index =
+        nextUnfinishedAfter !== -1
+          ? nextUnfinishedAfter
+          : otherPendingIdx !== -1
+            ? otherPendingIdx
+            : s.index + 1;
       stopRest();
       restRemaining = 0;
       saveActiveSession();

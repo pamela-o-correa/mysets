@@ -1500,3 +1500,63 @@ textarea:focus-visible {
     gap: 5px;
   }
 }
+.active-ex-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 10px;
+  margin-bottom: 6px;
+  scrollbar-width: thin;
+}
+.active-ex-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: #f6f6f1;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font: 600 11px "DM Sans", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.active-ex-chip.current {
+  background: var(--forest);
+  color: #fff;
+  border-color: var(--forest);
+}
+.active-ex-chip.done {
+  background: #e3ece0;
+  color: var(--forest);
+  border-color: #bdd0b8;
+}
+.active-ex-chip.done.current {
+  background: var(--forest);
+  color: #fff;
+}
+.row-status-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: 700 10px Manrope, sans-serif;
+  background: #e3ece0;
+  color: var(--forest);
+}
+.discard-workout-row {
+  margin-top: 12px;
+  text-align: center;
+}
+.discard-workout-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: 600 11px "DM Sans", sans-serif;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 8px;
+}
+.discard-workout-btn:hover {
+  color: #9e3f33;
+}
+
