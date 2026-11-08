@@ -688,10 +688,18 @@ function sanitizeStringList(arr, max) {
     : [];
 }
 function normalizeProfile(p) {
+  const rawName = cleanText(p?.name, 32);
+  const updatedAt = isoOrNull(p?.updatedAt);
+  let confirmed = false;
+  try {
+    confirmed = localStorage.getItem("mysets-name-confirmed-v1") === "1";
+  } catch {}
+  // Migração: se o perfil ainda estiver com o antigo valor padrão "Ana" sem ter sido confirmado pelo usuário, limpa para pedir o nome real.
+  const name = rawName === "Ana" && !confirmed ? "" : rawName;
   return {
-    name: cleanText(p?.name, 32) || "Ana",
+    name,
     weeklyGoal: toInt(p?.weeklyGoal, 1, 14, 4),
-    updatedAt: isoOrNull(p?.updatedAt),
+    updatedAt: name ? updatedAt : null,
   };
 }
 function normalizeState(raw, ownerId) {
@@ -998,12 +1006,20 @@ document
   .addEventListener("click", closeFormModal);
 document.getElementById("profile-form").addEventListener("submit", (e) => {
   e.preventDefault();
-  const name =
-    document.getElementById("input-profile-name").value.trim() || "Ana";
+  const nameInput = document.getElementById("input-profile-name");
+  const name = cleanText(nameInput.value, 32);
+  if (!name) {
+    showToast("Por favor, digite seu nome.");
+    nameInput.focus();
+    return;
+  }
   const weeklyGoal = Math.min(
     14,
     Math.max(1, Number(document.getElementById("input-weekly-goal").value) || 4),
   );
+  try {
+    localStorage.setItem("mysets-name-confirmed-v1", "1");
+  } catch {}
   state.profile = {
     name,
     weeklyGoal,
@@ -1091,11 +1107,15 @@ document
 document.getElementById("reset-demo").addEventListener("click", async () => {
   if (
     confirm(
-      "Restaurar os dados demonstrativos? Seus registros locais e na nuvem (se conectada) serão reiniciados.",
+      "Restaurar os dados padrão? Seus registros locais e na nuvem (se conectada) serão reiniciados.",
     )
   ) {
+    const keepName = cleanText(state.profile?.name, 32);
     state = normalizeState(null, currentUser?.id || null);
-    state.profile.updatedAt = new Date().toISOString();
+    if (keepName) {
+      state.profile.name = keepName;
+      state.profile.updatedAt = new Date().toISOString();
+    }
     selectedWorkout = "A";
     stopRest();
     activeSession = null;
@@ -1695,20 +1715,30 @@ function openExerciseForm(editName = null) {
     });
 }
 function renderProfile() {
-  const name = state.profile?.name || "Ana";
+  const name = cleanText(state.profile?.name, 32);
   const goal = state.profile?.weeklyGoal || 4;
-  const initial = (Array.from(name)[0] || "A").toUpperCase();
+  const initial = name ? (Array.from(name)[0] || "✦").toUpperCase() : "✦";
   const ids = ["sidebar-avatar", "topbar-avatar", "profile-avatar"];
   ids.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = initial;
   });
   const sideGreet = document.getElementById("sidebar-greeting");
-  if (sideGreet) sideGreet.textContent = `Olá, ${name}`;
+  if (sideGreet) {
+    sideGreet.textContent = name ? `Olá, ${name}` : "Definir meu nome";
+    sideGreet.style.cursor = "pointer";
+    sideGreet.onclick = () => {
+      if (!cleanText(state.profile?.name, 32)) {
+        promptUserNameIfNeeded(true);
+      } else {
+        navigate("profile");
+      }
+    };
+  }
   const homeName = document.getElementById("home-user-name");
-  if (homeName) homeName.textContent = name;
+  if (homeName) homeName.textContent = name ? `, ${name}` : "";
   const profName = document.getElementById("profile-name");
-  if (profName) profName.textContent = name;
+  if (profName) profName.textContent = name || "Seu perfil";
   const inputName = document.getElementById("input-profile-name");
   if (inputName) inputName.value = name;
   const inputGoal = document.getElementById("input-weekly-goal");
@@ -1717,6 +1747,71 @@ function renderProfile() {
   if (goalLabel) {
     goalLabel.textContent = `/ ${goal} ${goal === 1 ? "treino" : "treinos"}`;
   }
+}
+
+function promptUserNameIfNeeded(force = false) {
+  if (!force && cleanText(state.profile?.name, 32)) return;
+  if (
+    !force &&
+    (document.getElementById("workout-modal")?.classList.contains("open") ||
+      document.getElementById("exercise-modal")?.classList.contains("open") ||
+      document.getElementById("form-modal")?.classList.contains("open"))
+  ) {
+    return;
+  }
+  const goal = state.profile?.weeklyGoal || 4;
+  const currentName = cleanText(state.profile?.name, 32);
+  openFormModal(`
+    <p class="eyebrow">BEM-VINDO(A) AO MYSETS</p>
+    <h2 id="form-modal-title">Como você quer ser chamado(a)?</h2>
+    <p class="muted" style="margin-bottom:14px">Digite seu nome para personalizar o aplicativo e escolha sua meta semanal de treinos.</p>
+    <form id="welcome-profile-form" class="form-grid">
+      <label class="form-field">
+        <span>Seu nome ou apelido</span>
+        <input type="text" id="welcome-name" maxlength="32" value="${escapeAttr(currentName)}" placeholder="Digite seu nome..." autocomplete="given-name" required />
+      </label>
+      <label class="form-field">
+        <span>Meta semanal (treinos por semana)</span>
+        <input type="number" id="welcome-goal" min="1" max="14" value="${goal}" required />
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="button button-primary" style="width:100%">Continuar →</button>
+      </div>
+    </form>
+  `);
+  const nameInput = document.getElementById("welcome-name");
+  setTimeout(() => nameInput?.focus(), 40);
+  document
+    .getElementById("welcome-profile-form")
+    ?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = cleanText(nameInput.value, 32);
+      if (!name) {
+        showToast("Por favor, digite seu nome.");
+        nameInput.focus();
+        return;
+      }
+      const weeklyGoal = toInt(
+        document.getElementById("welcome-goal").value,
+        1,
+        14,
+        4,
+      );
+      try {
+        localStorage.setItem("mysets-name-confirmed-v1", "1");
+      } catch {}
+      state.profile = {
+        name,
+        weeklyGoal,
+        updatedAt: new Date().toISOString(),
+      };
+      saveState();
+      pushProfileToCloud();
+      renderProfile();
+      renderHome();
+      closeFormModal();
+      showToast(`Bem-vindo(a), ${name}! Bons treinos!`);
+    });
 }
 function renderExercises() {
   const q = document
@@ -2629,7 +2724,7 @@ function renderCloudSection() {
 
   if (!hasCreds || showCloudConfigForm) {
     if (statusPill) statusPill.textContent = "Modo local";
-    if (modePill) modePill.textContent = "MVP local";
+    if (modePill) modePill.textContent = "Modo local";
     if (subtitle) subtitle.textContent = "Perfil local personalizado";
     area.innerHTML = `
       <form id="supabase-cfg-form" class="form-grid">
@@ -2688,7 +2783,7 @@ function renderCloudSection() {
 
   if (!currentUser) {
     if (statusPill) statusPill.textContent = "Desconectado";
-    if (modePill) modePill.textContent = "MVP local";
+    if (modePill) modePill.textContent = "Modo local";
     if (subtitle) subtitle.textContent = "Entre na conta para sincronizar";
     area.innerHTML = `
       <form id="supabase-auth-form" class="form-grid">
@@ -2847,6 +2942,9 @@ function renderCloudSection() {
     try {
       await supabaseClient.auth.signOut({ scope: "local" });
     } catch {}
+    try {
+      localStorage.removeItem("mysets-name-confirmed-v1");
+    } catch {}
     currentUser = null;
     state = normalizeState(null);
     selectedWorkout = "A";
@@ -2868,10 +2966,12 @@ function renderCloudSection() {
 
 async function pushProfileToCloud() {
   if (!supabaseClient || !currentUser) return false;
+  const cleanName = cleanText(state.profile?.name, 32);
+  if (!cleanName) return true;
   try {
     const { error } = await supabaseClient.from("profiles").upsert({
       id: currentUser.id,
-      name: state.profile.name,
+      name: cleanName,
       weekly_goal: state.profile.weeklyGoal,
       updated_at: state.profile.updatedAt || new Date().toISOString(),
     });
@@ -3066,24 +3166,36 @@ async function syncWithCloud(notify = false) {
     if (failed) throw failed.error;
 
     if (profRes.data) {
+      const cloudName = cleanText(profRes.data.name, 32);
+      let confirmed = false;
+      try {
+        confirmed = localStorage.getItem("mysets-name-confirmed-v1") === "1";
+      } catch {}
+      const effectiveCloudName =
+        cloudName === "Ana" && !confirmed ? "" : cloudName;
+      if (effectiveCloudName && effectiveCloudName !== "Ana") {
+        try {
+          localStorage.setItem("mysets-name-confirmed-v1", "1");
+        } catch {}
+      }
       const localTime = state.profile?.updatedAt
         ? new Date(state.profile.updatedAt).getTime()
         : 0;
       const cloudTime = profRes.data.updated_at
         ? new Date(profRes.data.updated_at).getTime()
         : 0;
-      if (localTime > cloudTime) {
+      if (localTime > cloudTime && cleanText(state.profile?.name, 32)) {
         if (!(await pushProfileToCloud())) ok = false;
       } else {
         state.profile = normalizeProfile({
-          name: profRes.data.name || state.profile.name,
+          name: effectiveCloudName || state.profile.name,
           weeklyGoal:
             Number(profRes.data.weekly_goal) || state.profile.weeklyGoal,
           updatedAt: profRes.data.updated_at || new Date().toISOString(),
         });
       }
-    } else if (!(await pushProfileToCloud())) {
-      ok = false;
+    } else if (cleanText(state.profile?.name, 32)) {
+      if (!(await pushProfileToCloud())) ok = false;
     }
 
     if (Array.isArray(wkRes.data)) {
@@ -3222,6 +3334,14 @@ async function syncWithCloud(notify = false) {
     renderExercises();
     renderHome();
     renderProgress();
+    if (
+      cleanText(state.profile?.name, 32) &&
+      document.getElementById("welcome-profile-form")
+    ) {
+      closeFormModal();
+    } else if (!cleanText(state.profile?.name, 32)) {
+      promptUserNameIfNeeded();
+    }
     if (notify) {
       showToast(
         ok
@@ -3254,7 +3374,9 @@ renderHome();
 renderProgress();
 renderCloudSection();
 restoreActiveSession();
-initSupabase();
+initSupabase().finally(() => {
+  promptUserNameIfNeeded();
+});
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
     navigator.serviceWorker

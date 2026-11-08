@@ -15,7 +15,7 @@
     />
     <title>mysets | Seu treino, seu ritmo</title>
     <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" href="./assets/icon.svg?v=15" type="image/svg+xml" />
+    <link rel="icon" href="./assets/icon.svg?v=16" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,11 +23,11 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./css/styles.css?v=15" />
+    <link rel="stylesheet" href="./css/styles.css?v=16" />
     <script src="./vendor/chart.umd.js" defer></script>
     <script src="./vendor/supabase.js" defer></script>
-    <script src="./js/supabase-config.js?v=15" defer></script>
-    <script src="./js/app.js?v=15" defer></script>
+    <script src="./js/supabase-config.js?v=16" defer></script>
+    <script src="./js/app.js?v=16" defer></script>
   </head>
   <body>
     <div class="app-shell">
@@ -68,9 +68,9 @@
           <p>Consistência é mais importante que perfeição.</p>
         </div>
         <div class="sidebar-profile">
-          <div class="avatar" id="sidebar-avatar">A</div>
+          <div class="avatar" id="sidebar-avatar">✦</div>
           <div>
-            <strong id="sidebar-greeting">Olá, Ana</strong
+            <strong id="sidebar-greeting">Definir meu nome</strong
             ><small>Minha conta</small>
           </div>
           <button
@@ -108,7 +108,7 @@
               aria-label="Perfil"
               data-view="profile"
             >
-              A
+              ✦
             </button>
           </div>
         </header>
@@ -118,7 +118,7 @@
             <div>
               <p class="eyebrow">SEU ESPAÇO DE TREINO</p>
               <h1>
-                Vamos evoluir, <span id="home-user-name">Ana</span
+                Vamos evoluir<span id="home-user-name"></span
                 ><span class="heading-dot">.</span>
               </h1>
               <p class="muted">Pequenos passos constroem grandes resultados.</p>
@@ -363,12 +363,12 @@
             <p class="muted">Suas informações e preferências.</p>
           </div>
           <article class="card profile-card">
-            <div class="profile-avatar" id="profile-avatar">A</div>
+            <div class="profile-avatar" id="profile-avatar">✦</div>
             <div>
-              <h2 id="profile-name">Ana</h2>
+              <h2 id="profile-name">Seu perfil</h2>
               <p class="muted" id="profile-subtitle">Perfil local personalizado</p>
             </div>
-            <span class="pill" id="profile-mode-pill">MVP local</span>
+            <span class="pill" id="profile-mode-pill">Modo local</span>
           </article>
           <article class="card settings-card">
             <h3>Personalizar perfil</h3>
@@ -382,7 +382,7 @@
                   type="text"
                   id="input-profile-name"
                   maxlength="32"
-                  placeholder="Ex.: Ana"
+                  placeholder="Como você quer ser chamado(a)?"
                   required
                 />
               </label>
@@ -423,8 +423,8 @@
           <article class="card settings-card">
             <h3>Sobre o mysets</h3>
             <p class="muted">
-              Seu treino, explicado passo a passo. Esta versão é um protótipo
-              funcional com dados armazenados neste navegador.
+              Seu treino, explicado passo a passo. Seus dados ficam salvos neste
+              aparelho e podem ser sincronizados na sua conta na nuvem.
             </p>
             <div class="detail-actions" style="margin-top: 10px">
               <button type="button" class="button button-secondary" id="export-backup">
@@ -440,7 +440,7 @@
                 style="display: none"
               />
               <button class="text-button" id="reset-demo" style="margin-left: auto">
-                Restaurar dados demonstrativos
+                Restaurar dados padrão
               </button>
             </div>
           </article>

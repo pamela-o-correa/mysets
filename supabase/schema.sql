@@ -6,7 +6,7 @@
 -- 1. Tabela de Perfis de Usuários
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  name text not null default 'Ana' check (char_length(name) between 1 and 80),
+  name text not null default '' check (char_length(name) <= 80),
   weekly_goal integer not null default 4 check (weekly_goal between 1 and 14),
   updated_at timestamptz not null default now()
 );
